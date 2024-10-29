@@ -11,12 +11,13 @@
 - Paper: https://arxiv.org/pdf/1505.04597 
 - Code: https://www.kaggle.com/code/bryanb/image-segmentation-u-net
 
-SegNet (2015)
-Key innovation: Encoder-decoder with pooling indices
-Architecture: VGG16-based encoder with corresponding decoder
-Notable feature: Memory efficient upsampling using pooling indices
-Paper: https://arxiv.org/pdf/1511.00561
-Code: https://www.kaggle.com/code/harlequeen/semantic-segmentation-of-plants-with-segnet
+### SegNet (2015)
+- Key innovation: Encoder-decoder with pooling indices
+- Architecture: VGG16-based encoder with corresponding decoder
+- Notable feature: Memory efficient upsampling using pooling indices
+- Paper: https://arxiv.org/pdf/1511.00561
+- Code: https://www.kaggle.com/code/harlequeen/semantic-segmentation-of-plants-with-segnet
+
 PSPNet (2016)
 Full name: Pyramid Scene Parsing Network
 Key innovation: Pyramid Pooling Module
