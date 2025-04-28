@@ -1,0 +1,56 @@
+# Dataset configuration
+dataset:
+  name: 'cityscapes'
+  root_dir: 'datasets/cityscapes'
+  image_size: [512, 1024]  # [height, width]
+  num_classes: 19
+  ignore_index: 255
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+# Model configuration
+model:
+  name: 'unet'
+  backbone: 'resnet50'
+  pretrained: true
+  in_channels: 3
+  num_classes: 19
+  head:
+    type: 'semantic'
+    dropout: 0.1
+
+# Training configuration
+training:
+  epochs: 100
+  batch_size: 8
+  num_workers: 4
+  optimizer:
+    name: 'adam'
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    name: 'cosine'
+    T_max: 100
+    eta_min: 0.00001
+  loss:
+    name: 'cross_entropy'
+    aux_weight: 0.4
+  metrics:
+    - 'miou'
+    - 'pixel_accuracy'
+
+# Validation configuration
+validation:
+  batch_size: 4
+  num_workers: 4
+  metrics:
+    - 'miou'
+    - 'pixel_accuracy'
+
+# Logging configuration
+logging:
+  log_dir: 'logs'
+  save_dir: 'checkpoints'
+  log_interval: 10
+  val_interval: 1
+  save_interval: 5 
