@@ -18,13 +18,14 @@
 - Paper: https://arxiv.org/pdf/1511.00561
 - Code: https://www.kaggle.com/code/harlequeen/semantic-segmentation-of-plants-with-segnet
 
-PSPNet (2016)
-Full name: Pyramid Scene Parsing Network
-Key innovation: Pyramid Pooling Module
-Architecture: ResNet backbone with hierarchical global prior
-Notable feature: Multi-scale feature aggregation
-Paper: https://arxiv.org/pdf/1612.01105
-Code: https://www.kaggle.com/code/michaelcripman/image-segmentation-using-pspnet?scriptVersionId=61005697
+### PSPNet (2016)
+- Full name: Pyramid Scene Parsing Network
+- Key innovation: Pyramid Pooling Module
+- Architecture: ResNet backbone with hierarchical global prior
+- Notable feature: Multi-scale feature aggregation
+- Paper: https://arxiv.org/pdf/1612.01105
+- Code: https://www.kaggle.com/code/michaelcripman/image-segmentation-using-pspnet?scriptVersionId=61005697
+
 DeepLab v3+ (2018)
 Key innovation: Atrous Spatial Pyramid Pooling (ASPP)
 Architecture: Encoder-decoder with ASPP and modified Xception backbone
