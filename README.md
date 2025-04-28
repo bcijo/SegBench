@@ -105,7 +105,7 @@ python scripts/evaluate.py --config configs/config_cityscapes_unet.yaml --checkp
 ### Adding a New Model
 1. Create a new model class in `models/` inheriting from `BaseModel`
 2. Implement the model architecture
-3. Add configuration options in the YAML files
+3. Add configuration options in the YAML files.
 
 ## License
 
