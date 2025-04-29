@@ -82,7 +82,6 @@ class UNet(BaseModel):
 
         # Upsample to original resolution
         decoded = F.interpolate(d0, size=x.shape[2:], mode='bilinear', align_corners=False)
-        # Package features for the attached head
-        features = {'backbone_features': decoded}
-        # Delegate to the task-specific head
-        return self.head(features) 
+        
+        # Pass the final decoded features to the attached head
+        return self.head(decoded) 
