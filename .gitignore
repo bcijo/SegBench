@@ -1,2 +1,10 @@
 /datasets/data
 segbench/
+/models/__pycache__
+/models/heads/__pycache__
+/models/backbones/__pycache__
+/models/unet/__pycache__
+/models/pspnet/__pycache__
+/models/hrnet/__pycache__
+/models/heads/__pycache__
+

@@ -10,13 +10,15 @@ from .base_model import BaseModel
 
 class UpConvBlock(nn.Module):
     """Upsampling block used in UNet decoder."""
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, skip_channels, out_channels):
         super(UpConvBlock, self).__init__()
-        # Transposed convolution for upsampling
+        # Transposed convolution for upsampling (input channels from layer below, output channels to match skip connection for simpler concatenation handling)
+        # Let's keep output channels of upconv as out_channels
         self.upconv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
         # Double convolution block after concatenation
+        # Input channels = channels from upconv (out_channels) + channels from skip connection (skip_channels)
         self.conv_block = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.Conv2d(skip_channels + out_channels, out_channels, kernel_size=3, padding=1), # Corrected input channels
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
@@ -55,10 +57,10 @@ class UNet(BaseModel):
         self.enc4 = backbone.layer4  # 2048 channels
 
         # Decoder with skip connections
-        self.up4 = UpConvBlock(2048, 512)
-        self.up3 = UpConvBlock(512, 256)
-        self.up2 = UpConvBlock(256, 128)
-        self.up1 = UpConvBlock(128, 64)
+        self.up4 = UpConvBlock(2048, 1024, 512)  # Input from enc4 (2048), Skip from enc3 (1024), Output 512 channels
+        self.up3 = UpConvBlock(512, 512, 256)   # Input from d3 (512), Skip from enc2 (512), Output 256 channels
+        self.up2 = UpConvBlock(256, 256, 128)   # Input from d2 (256), Skip from enc1 (256), Output 128 channels
+        self.up1 = UpConvBlock(128, 64, 64)    # Input from d1 (128), Skip from enc0 (64), Output 64 channels
 
         # Number of channels output by decoder (for head attachment)
         self.dec_channels = 64
