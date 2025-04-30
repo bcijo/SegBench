@@ -36,24 +36,27 @@ class RandomHorizontalFlip:
 class ToTensor:
     def __call__(self, image, target):
         """Convert image and target to PyTorch tensors.
-           Also checks target mask values for validity.
+           Also checks and corrects invalid target mask values.
         """
         image = F.to_tensor(image)
         target_np = np.array(target)
         target = torch.as_tensor(target_np, dtype=torch.int64)
 
-        # Check for invalid mask values (should be 0-20 or 255 for PASCAL VOC)
-        # Adjust the upper valid limit (20) if using a different dataset/num_classes
-        valid_values = (target_np >= 0) & (target_np <= 20) | (target_np == 255)
-        if not np.all(valid_values):
-            unique_values = np.unique(target_np)
-            invalid_values = unique_values[~((unique_values >= 0) & (unique_values <= 20) | (unique_values == 255))]
-            print(f"ERROR: Invalid values found in target mask: {invalid_values}")
-            print(f"       All unique values in this mask: {unique_values}")
-            # Optionally, you might want to raise an error here to stop execution
-            # raise ValueError(f"Invalid values found in target mask: {invalid_values}")
-            # Or replace invalid values with ignore_index (use with caution)
-            # target[~((target >= 0) & (target <= 20) | (target == 255))] = 255
+        # Define valid range and ignore index (PASCAL VOC specific)
+        min_valid = 0
+        max_valid = 20 # num_classes - 1
+        ignore_index = 255
+
+        # Identify invalid values
+        invalid_mask = ~((target >= min_valid) & (target <= max_valid) | (target == ignore_index))
+        
+        if torch.any(invalid_mask):
+            # Get unique invalid values for reporting (optional, can be removed for speed)
+            unique_invalid = torch.unique(target[invalid_mask])
+            print(f"WARNING: Replacing invalid mask values {unique_invalid.tolist()} with ignore_index ({ignore_index})")
+            
+            # Replace invalid values with ignore_index
+            target[invalid_mask] = ignore_index
 
         return image, target
 

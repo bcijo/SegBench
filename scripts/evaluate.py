@@ -5,11 +5,13 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import sys
+import torch.nn as nn
 
 # Add parent directory to path to import local modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datasets.cityscapes import CityscapesDataset
+from datasets.pascal_voc import PascalVOCDataset
 from models.unet import UNet
 from utils.transforms import get_transform
 from utils.metrics import SegmentationMetrics
@@ -32,17 +34,35 @@ def load_config(config_path):
 
 def get_model(config, checkpoint_path):
     # Create model
-    if config['model']['name'].lower() == 'unet':
-        model = UNet(config['model'])
+    model_config = config['model']
+    if model_config['name'].lower() == 'unet':
+        model = UNet(
+            backbone_name=model_config['backbone'],
+            pretrained=False
+        )
+        # Create and attach the segmentation head (consistent with train.py)
+        head = nn.Sequential(
+            nn.Conv2d(model.dec_channels, model_config['num_classes'], kernel_size=1)
+        )
+        model.attach_head(head)
     else:
-        raise ValueError(f"Model {config['model']['name']} not supported")
+        raise ValueError(f"Model {model_config['name']} not supported")
     
     # Load checkpoint
     checkpoint = torch.load(checkpoint_path, map_location='cpu')
     if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-        model.load_state_dict(checkpoint['model_state_dict'])
+        # Handle checkpoints saved with DataParallel
+        state_dict = checkpoint['model_state_dict']
+        # Remove 'module.' prefix if saved with DataParallel
+        if list(state_dict.keys())[0].startswith('module.'):
+            state_dict = {k[len("module."):]: v for k, v in state_dict.items()}
+        model.load_state_dict(state_dict)
     else:
-        model.load_state_dict(checkpoint)
+        # Handle checkpoints saved directly as state_dict
+        state_dict = checkpoint
+        if list(state_dict.keys())[0].startswith('module.'):
+            state_dict = {k[len("module."):]: v for k, v in state_dict.items()}
+        model.load_state_dict(state_dict)
     
     return model
 
@@ -59,7 +79,7 @@ def evaluate(model, loader, device, num_classes):
             
             # Forward pass
             outputs = model(images)
-            pred = outputs['logits'].argmax(1)
+            pred = outputs.argmax(1)
             
             # Update metrics
             metrics.update(pred, targets)
@@ -77,6 +97,7 @@ def main():
     
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
     
     # Create model and load checkpoint
     model = get_model(config, args.checkpoint)
@@ -85,22 +106,33 @@ def main():
     
     # Create dataset and dataloader
     transform = get_transform(config['dataset'], is_train=False)
-    dataset = CityscapesDataset(
-        root_dir=config['dataset']['root_dir'],
-        split=args.split,
-        transform=transform
-    )
+    if config['dataset']['name'].lower() == 'cityscapes':
+        dataset = CityscapesDataset(
+            root_dir=config['dataset']['root_dir'],
+            split=args.split,
+            transform=transform
+        )
+    elif config['dataset']['name'].lower() == 'pascal_voc':
+        dataset = PascalVOCDataset(
+            root=config['dataset']['root_dir'],
+            split=args.split,
+            task='semantic',
+            transforms=transform
+        )
+    else:
+        raise ValueError(f"Dataset {config['dataset']['name']} not supported")
     
     loader = DataLoader(
         dataset,
         batch_size=config['validation']['batch_size'],
         shuffle=False,
         num_workers=config['validation']['num_workers'],
-        pin_memory=True
+        pin_memory=torch.cuda.is_available()
     )
     
     # Evaluate
-    scores, class_ious = evaluate(model, loader, device, config['dataset']['num_classes'])
+    print(f"Evaluating on {args.split} split...")
+    scores, class_ious = evaluate(model, loader, device, config['model']['num_classes'])
     
     # Print results
     print("\nEvaluation Results:")
@@ -109,10 +141,16 @@ def main():
     print(f"Pixel Accuracy: {scores['pixel_acc']:.4f}")
     print(f"Mean Class Accuracy: {scores['class_acc']:.4f}")
     
-    print("\nPer-class IoU:")
-    class_names = dataset.get_classes()[0]  # Assuming get_classes returns (names, mapping)
-    for i, iou in enumerate(class_ious):
-        print(f"{class_names[i]}: {iou:.4f}")
+    # Per-class IoU requires a get_classes method in the dataset (implement if needed)
+    # print("\nPer-class IoU:")
+    # try:
+    #     class_names = dataset.get_classes()[0]  # Assuming get_classes returns (names, mapping)
+    #     for i, iou in enumerate(class_ious):
+    #         print(f"{class_names[i]}: {iou:.4f}")
+    # except AttributeError:
+    #     print("Dataset does not have a get_classes method for detailed IoU report.")
+    #     for i, iou in enumerate(class_ious):
+    #         print(f"Class {i}: {iou:.4f}")
 
 if __name__ == '__main__':
     main() 
